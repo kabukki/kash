@@ -13,6 +13,7 @@ import { Route as TaxesRouteImport } from './routes/taxes'
 import { Route as SalaryRouteImport } from './routes/salary'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as HealthRouteImport } from './routes/health'
+import { Route as ComparisonRouteImport } from './routes/comparison'
 import { Route as IndexRouteImport } from './routes/index'
 
 const TaxesRoute = TaxesRouteImport.update({
@@ -35,6 +36,11 @@ const HealthRoute = HealthRouteImport.update({
   path: '/health',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ComparisonRoute = ComparisonRouteImport.update({
+  id: '/comparison',
+  path: '/comparison',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -43,6 +49,7 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/comparison': typeof ComparisonRoute
   '/health': typeof HealthRoute
   '/profile': typeof ProfileRoute
   '/salary': typeof SalaryRoute
@@ -50,6 +57,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/comparison': typeof ComparisonRoute
   '/health': typeof HealthRoute
   '/profile': typeof ProfileRoute
   '/salary': typeof SalaryRoute
@@ -58,6 +66,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/comparison': typeof ComparisonRoute
   '/health': typeof HealthRoute
   '/profile': typeof ProfileRoute
   '/salary': typeof SalaryRoute
@@ -65,14 +74,22 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/health' | '/profile' | '/salary' | '/taxes'
+  fullPaths: '/' | '/comparison' | '/health' | '/profile' | '/salary' | '/taxes'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/health' | '/profile' | '/salary' | '/taxes'
-  id: '__root__' | '/' | '/health' | '/profile' | '/salary' | '/taxes'
+  to: '/' | '/comparison' | '/health' | '/profile' | '/salary' | '/taxes'
+  id:
+    | '__root__'
+    | '/'
+    | '/comparison'
+    | '/health'
+    | '/profile'
+    | '/salary'
+    | '/taxes'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ComparisonRoute: typeof ComparisonRoute
   HealthRoute: typeof HealthRoute
   ProfileRoute: typeof ProfileRoute
   SalaryRoute: typeof SalaryRoute
@@ -109,6 +126,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HealthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/comparison': {
+      id: '/comparison'
+      path: '/comparison'
+      fullPath: '/comparison'
+      preLoaderRoute: typeof ComparisonRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -121,6 +145,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ComparisonRoute: ComparisonRoute,
   HealthRoute: HealthRoute,
   ProfileRoute: ProfileRoute,
   SalaryRoute: SalaryRoute,

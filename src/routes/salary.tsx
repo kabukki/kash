@@ -26,7 +26,7 @@ function SalaryPage() {
 
   return (
     <div className="w-full min-h-screen bg-cream py-12 px-4">
-      <div className="max-w-2xl mx-auto flex flex-col items-center gap-10">
+      <div className="max-w-2xl mx-auto flex flex-col items-center">
         {gross !== null && gross > 0 ? (
           <Counter gross={gross} />
         ) : (

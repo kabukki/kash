@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { Calculator, HeartPulse, TrendingUp } from 'lucide-react'
+import { BarChart3, Calculator, HeartPulse, TrendingUp } from 'lucide-react'
 
 export const Route = createFileRoute('/')({
   component: Landing,
@@ -32,6 +32,12 @@ function Landing() {
           title="Salaire"
           description="Compteur de revenus en direct, seconde par seconde."
           Icon={TrendingUp}
+        />
+        <LandingCard
+          to="/comparison"
+          title="Comparaison"
+          description="Votre salaire face aux salariés français."
+          Icon={BarChart3}
         />
         <LandingCard
           to="/health"
