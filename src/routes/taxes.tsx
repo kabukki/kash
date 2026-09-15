@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import clsx from 'clsx'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -9,7 +9,6 @@ import {
   STATUS_CHARGES,
   STATUS_DEDUCTION,
   STATUS_LABEL,
-  STATUS_TAGLINE,
   computeBrackets,
   fmtEUR as fmt,
   type BracketRow,
@@ -17,6 +16,7 @@ import {
 } from '../lib/taxes'
 
 export const Route = createFileRoute('/taxes')({
+  ssr: false,
   component: TaxJourney,
   head: () => ({
     meta: [{ title: "Impôts — Calculateur d'impôt sur le revenu (Barème 2026)" }],
@@ -32,18 +32,8 @@ const FADE_IN_UP = {
 } as const
 
 function TaxJourney() {
-  // initializeWithValue: false — SSR has no localStorage, so first render
-  // (server and client) returns `null` and the hook syncs the real value
-  // right after mount, avoiding a hydration mismatch.
-  const [storedGross, setGross] = useLocalStorage<number | null>('kash:gross', null, {
-    initializeWithValue: false,
-  })
-  // Distinguishes "not synced from storage yet" from "synced, actually
-  // empty" so a stored gross doesn't flash in a beat after first paint.
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
-  const gross = mounted ? storedGross : null
-  const [status, setStatus] = useState<Status | null>(null)
+  const [gross] = useLocalStorage<number | null>('gross', null)
+  const [status] = useLocalStorage<Status | null>('status', null)
   const [flowStarted, setFlowStarted] = useState(false)
   const [flowDone, setFlowDone] = useState(false)
   // PAS rate. `null` means "use the computed average". Once the user edits it
@@ -66,9 +56,6 @@ function TaxJourney() {
   const diff = paid - totalTax
   const netAfterTax = net - totalTax
 
-  // Visibility predicates — picker only appears once a gross has been entered,
-  // and the breakdown requires both gross + status.
-  const showPicker = gross !== null && gross > 0
   const showBreakdown = hasInputs
   const showBrackets = flowStarted && hasInputs
   const showCalculateCta = hasInputs && !flowStarted
@@ -76,26 +63,40 @@ function TaxJourney() {
   const showPasAndPower = flowDone && hasInputs
 
   const reset = () => {
-    setStatus(null)
     setFlowStarted(false)
     setFlowDone(false)
     setPas(null)
     setPasTouched(false)
   }
 
+  if (gross === null || gross <= 0 || status === null) {
+    return (
+      <div className="w-full min-h-screen bg-cream py-12 px-4">
+        <div className="max-w-2xl mx-auto flex flex-col items-center gap-4 text-center">
+          <div className="text-center text-balance mb-2 max-w-xl mx-auto">
+            <h2 className="font-display text-2xl md:text-3xl leading-tight font-semibold tracking-tight text-ink m-0">
+              Complétez votre profil pour commencer
+            </h2>
+            <p className="text-ink-muted text-sm md:text-base m-0 mt-2 leading-snug">
+              Votre salaire annuel brut et votre statut se renseignent
+              désormais dans votre profil.
+            </p>
+          </div>
+          <Link
+            to="/profile"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-clay text-cream text-sm font-medium no-underline hover:opacity-90 transition-opacity"
+          >
+            Compléter mon profil
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="w-full min-h-screen bg-cream py-12 px-4">
       <div className="max-w-3xl mx-auto flex flex-col items-stretch gap-16">
-          <GrossSection gross={gross} onChange={setGross} />
-          <AnimatePresence>
-            {showPicker && (
-              <StatusSection
-                key="picker"
-                status={status}
-                onChange={setStatus}
-              />
-            )}
-          </AnimatePresence>
+          <GrossDisplay gross={gross} />
           <AnimatePresence mode="popLayout">
             {showBreakdown && charges && gross !== null && status !== null && (
               <ChargesSection
@@ -218,89 +219,17 @@ function SectionHeading({
   )
 }
 
-function GrossSection({
-  gross,
-  onChange,
-}: {
-  gross: number | null
-  onChange: (n: number | null) => void
-}) {
+function GrossDisplay({ gross }: { gross: number }) {
   return (
     <div className="flex flex-col items-center gap-2 text-center">
       <SectionHeading
-        title={<>Quel est votre salaire annuel brut&nbsp;?</>}
+        title="Votre salaire annuel brut"
         subtitle="Tout commence par votre salaire affiché sur votre contrat, avant cotisations et avant impôt."
       />
-      <div className="flex items-baseline justify-center gap-2 text-5xl md:text-6xl font-medium tabular-nums tracking-tight text-ink">
-        <input
-          type="number"
-          inputMode="numeric"
-          autoFocus
-          value={gross === null ? '' : Math.round(gross)}
-          min={0}
-          step={1000}
-          placeholder="0"
-          onChange={(e) => {
-            const v = e.target.value
-            if (v === '') {
-              onChange(null)
-              return
-            }
-            const n = parseFloat(v)
-            onChange(Number.isNaN(n) ? null : n)
-          }}
-          className="bg-transparent border-0 outline-none text-center leading-tight caret-clay focus:outline-none placeholder:text-ink-soft/40 field-sizing-content min-w-[1ch] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-        />
-        <span aria-hidden="true">€</span>
-      </div>
+      <span className="text-5xl md:text-6xl font-medium tabular-nums tracking-tight text-ink">
+        {fmt(gross)}
+      </span>
     </div>
-  )
-}
-
-function StatusSection({
-  status,
-  onChange,
-}: {
-  status: Status | null
-  onChange: (s: Status) => void
-}) {
-  return (
-    <motion.div {...FADE_IN_UP} className="flex flex-col items-center gap-2">
-      <SectionHeading
-        title={<>Quel est votre statut&nbsp;?</>}
-        subtitle="Les charges sociales retirées de votre brut dépendent de votre statut. C'est la première chose à connaître pour calculer ce que vous gardez vraiment."
-      />
-      <div
-        role="radiogroup"
-        aria-label="Statut"
-        className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full"
-      >
-        {(['public', 'etam', 'cadre', 'liberal'] as Status[]).map((s) => {
-        const active = status === s
-        return (
-          <button
-            key={s}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            onClick={() => onChange(s)}
-            className={`text-left p-4 rounded-app-lg border transition-all cursor-pointer ${
-              active
-                ? 'bg-cream-surface border-clay shadow-[0_0_0_3px_var(--color-clay-soft)]'
-                : 'bg-cream-surface border-cream-border hover:border-cream-border-strong'
-            }`}
-          >
-            <span className="block text-base font-semibold tracking-tight text-ink mb-2">
-              {STATUS_LABEL[s]}
-            </span>
-            <p className="text-xs text-ink-muted leading-snug m-0">
-              {STATUS_TAGLINE[s]}
-            </p>
-          </button>
-        )
-      })}
-      </div>
-    </motion.div>
   )
 }
 

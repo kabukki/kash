@@ -6,6 +6,8 @@ import {
   createRootRoute,
 } from '@tanstack/react-router'
 
+import { UserRound } from 'lucide-react'
+
 import appCss from '../styles.css?url'
 
 export const Route = createRootRoute({
@@ -83,17 +85,14 @@ function RootComponent() {
           </span>
         </nav>
 
-        <button
-          type="button"
-          aria-label="Pays : France"
-          title="France"
-          className="inline-flex items-center gap-2 py-1.5 pl-2 pr-3 rounded-full bg-cream-surface border border-cream-border shadow-app text-[12px] font-medium tracking-[0.04em] text-ink-muted hover:text-ink transition-colors cursor-default justify-self-end"
+        <Link
+          to="/profile"
+          aria-label="Profil"
+          title="Profil"
+          className="inline-flex items-center justify-center size-8 rounded-full bg-cream-surface border border-cream-border shadow-app text-ink-muted hover:text-ink transition-colors no-underline justify-self-end"
         >
-          <span className="text-base leading-none" aria-hidden="true">
-            🇫🇷
-          </span>
-          France
-        </button>
+          <UserRound size={16} strokeWidth={2} aria-hidden="true" />
+        </Link>
       </header>
 
       <div className="flex-1 flex flex-col min-h-0">
