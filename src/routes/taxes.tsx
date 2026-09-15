@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import clsx from 'clsx'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowRight, Info, RotateCcw } from 'lucide-react'
+import { useLocalStorage } from 'usehooks-ts'
 import { Button, Money, Percent, Picker, Tooltip } from '../components'
 import {
   STATUS_CHARGES,
@@ -31,7 +32,17 @@ const FADE_IN_UP = {
 } as const
 
 function TaxJourney() {
-  const [gross, setGross] = useState<number | null>(null)
+  // initializeWithValue: false — SSR has no localStorage, so first render
+  // (server and client) returns `null` and the hook syncs the real value
+  // right after mount, avoiding a hydration mismatch.
+  const [storedGross, setGross] = useLocalStorage<number | null>('kash:gross', null, {
+    initializeWithValue: false,
+  })
+  // Distinguishes "not synced from storage yet" from "synced, actually
+  // empty" so a stored gross doesn't flash in a beat after first paint.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  const gross = mounted ? storedGross : null
   const [status, setStatus] = useState<Status | null>(null)
   const [flowStarted, setFlowStarted] = useState(false)
   const [flowDone, setFlowDone] = useState(false)

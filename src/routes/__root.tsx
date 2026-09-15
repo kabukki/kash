@@ -35,6 +35,7 @@ export const Route = createRootRoute({
 
 const NAV_LINKS = [
   { to: '/taxes', label: 'Impôts' },
+  { to: '/salary', label: 'Salaire' },
   { to: '/health', label: 'Santé' },
 ] as const
 

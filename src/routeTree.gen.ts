@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TaxesRouteImport } from './routes/taxes'
+import { Route as SalaryRouteImport } from './routes/salary'
 import { Route as HealthRouteImport } from './routes/health'
 import { Route as IndexRouteImport } from './routes/index'
 
 const TaxesRoute = TaxesRouteImport.update({
   id: '/taxes',
   path: '/taxes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SalaryRoute = SalaryRouteImport.update({
+  id: '/salary',
+  path: '/salary',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HealthRoute = HealthRouteImport.update({
@@ -32,30 +38,34 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/health': typeof HealthRoute
+  '/salary': typeof SalaryRoute
   '/taxes': typeof TaxesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/health': typeof HealthRoute
+  '/salary': typeof SalaryRoute
   '/taxes': typeof TaxesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/health': typeof HealthRoute
+  '/salary': typeof SalaryRoute
   '/taxes': typeof TaxesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/health' | '/taxes'
+  fullPaths: '/' | '/health' | '/salary' | '/taxes'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/health' | '/taxes'
-  id: '__root__' | '/' | '/health' | '/taxes'
+  to: '/' | '/health' | '/salary' | '/taxes'
+  id: '__root__' | '/' | '/health' | '/salary' | '/taxes'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   HealthRoute: typeof HealthRoute
+  SalaryRoute: typeof SalaryRoute
   TaxesRoute: typeof TaxesRoute
 }
 
@@ -66,6 +76,13 @@ declare module '@tanstack/react-router' {
       path: '/taxes'
       fullPath: '/taxes'
       preLoaderRoute: typeof TaxesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/salary': {
+      id: '/salary'
+      path: '/salary'
+      fullPath: '/salary'
+      preLoaderRoute: typeof SalaryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/health': {
@@ -88,6 +105,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   HealthRoute: HealthRoute,
+  SalaryRoute: SalaryRoute,
   TaxesRoute: TaxesRoute,
 }
 export const routeTree = rootRouteImport
