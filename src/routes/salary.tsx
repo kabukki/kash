@@ -1,8 +1,15 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { useLocalStorage } from 'usehooks-ts'
-import { startOfMonth } from 'date-fns'
 import NumberFlow from '@number-flow/react'
+import clsx from 'clsx'
+import { Picker } from '../components'
+import {
+  type SalaryMode,
+  elapsedPaidSeconds,
+  isEarning,
+  monthPaidSeconds,
+} from '../lib/workmonth'
 
 export const Route = createFileRoute('/salary')({
   ssr: false,
@@ -12,14 +19,10 @@ export const Route = createFileRoute('/salary')({
   }),
 })
 
-const SECONDS_PER_YEAR = 365.25 * 24 * 3600
-
-const EUR_LIVE_FORMAT = {
-  style: 'currency',
-  currency: 'EUR',
-  minimumFractionDigits: 4,
-  maximumFractionDigits: 4,
-} as const
+const MODE_OPTIONS = [
+  { id: 'full' as const, label: 'TOUTES LES SECONDES' },
+  { id: 'working' as const, label: 'HEURES OUVRÉES' },
+]
 
 function SalaryPage() {
   const [gross] = useLocalStorage<number | null>('gross', null)
@@ -74,20 +77,24 @@ function MissingGross() {
 }
 
 function Counter({ gross }: { gross: number }) {
-  const perSecond = gross / SECONDS_PER_YEAR
+  const [mode, setMode] = useLocalStorage<SalaryMode>('salaryMode', 'full')
   const [earned, setEarned] = useState(0)
+  const [perSecond, setPerSecond] = useState(0)
+  const [earning, setEarning] = useState(true)
   const frameRef = useRef<number>(0)
 
   useEffect(() => {
-    const monthStart = startOfMonth(new Date()).getTime()
     const tick = () => {
-      const elapsedSec = (Date.now() - monthStart) / 1000
-      setEarned(elapsedSec * perSecond)
+      const now = new Date()
+      const rate = gross / 12 / monthPaidSeconds(now, mode)
+      setPerSecond(rate)
+      setEarned(elapsedPaidSeconds(now, mode) * rate)
+      setEarning(isEarning(now, mode))
       frameRef.current = requestAnimationFrame(tick)
     }
     frameRef.current = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frameRef.current)
-  }, [perSecond])
+  }, [gross, mode])
 
   return (
     <div className="flex flex-col items-center gap-4 text-center">
@@ -112,13 +119,45 @@ function Counter({ gross }: { gross: number }) {
                 maximumFractionDigits: 4,
               })}
             </b>{' '}
-            par seconde. Voici ce
-            que vous avez gagné depuis le début du mois.
+            par seconde comptée. Voici ce que vous avez gagné depuis le début du
+            mois.
           </>
         }
       />
-      <span className="text-6xl md:text-7xl font-medium tabular-nums leading-tight tracking-tight text-clay">
-        <NumberFlow value={earned} locales="fr-FR" format={EUR_LIVE_FORMAT} />
+      <div className="flex items-center gap-3">
+        <Picker
+          options={MODE_OPTIONS}
+          value={mode}
+          onChange={setMode}
+          ariaLabel="Mode de comptage"
+        />
+        <span
+          role="status"
+          className="inline-flex items-center gap-1.5 text-[11px] font-medium tracking-[0.04em] text-ink-muted"
+        >
+          <span
+            aria-hidden="true"
+            className={clsx(
+              'size-2 rounded-full',
+              earning ? 'bg-sage animate-pulse' : 'bg-clay',
+            )}
+          />
+          {earning ? 'EN COURS' : 'EN PAUSE'}
+        </span>
+      </div>
+      <span
+        className={clsx(
+          'text-6xl md:text-7xl font-medium tabular-nums leading-tight tracking-tight transition-colors',
+          earning ? 'text-sage' : 'text-clay',
+        )}
+      >
+        <NumberFlow value={earned} locales="fr-FR" format={{
+          style: 'currency',
+          currency: 'EUR',
+          minimumFractionDigits: 4,
+          maximumFractionDigits: 4,
+          signDisplay: 'always'
+        }} />
       </span>
     </div>
   )
