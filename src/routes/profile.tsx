@@ -2,6 +2,9 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowRight } from 'lucide-react'
 import { useLocalStorage } from 'usehooks-ts'
 import { STATUS_LABEL, STATUS_TAGLINE, type Status } from '../lib/taxes'
+import type { WorkHours } from '../lib/workmonth'
+
+export const DEFAULT_WORK_HOURS: WorkHours = { start: 9, end: 17 }
 
 export const Route = createFileRoute('/profile')({
   ssr: false,
@@ -14,6 +17,10 @@ export const Route = createFileRoute('/profile')({
 function ProfilePage() {
   const [gross, setGross] = useLocalStorage<number | null>('gross', null)
   const [status, setStatus] = useLocalStorage<Status | null>('status', null)
+  const [workHours, setWorkHours] = useLocalStorage<WorkHours>(
+    'workHours',
+    DEFAULT_WORK_HOURS,
+  )
 
   return (
     <div className="w-full min-h-screen bg-cream py-12 px-4">
@@ -115,6 +122,45 @@ function ProfilePage() {
           </div>
         </div>
 
+        <div className="flex flex-col items-center gap-2 text-center">
+          <div className="text-center text-balance mb-2 max-w-xl mx-auto">
+            <h2 className="font-display text-2xl md:text-3xl leading-tight font-semibold tracking-tight text-ink m-0">
+              Vos horaires de travail
+            </h2>
+            <p className="text-ink-muted text-sm md:text-base m-0 mt-2 leading-snug">
+              Utilisés par le compteur en direct, en mode heures ouvrées.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 text-2xl md:text-3xl font-medium tabular-nums tracking-tight text-ink">
+            <input
+              type="time"
+              aria-label="Début de journée"
+              value={toTimeValue(workHours.start)}
+              onChange={(e) =>
+                setWorkHours((h) => ({ ...h, start: fromTimeValue(e.target.value, h.start) }))
+              }
+              className="bg-cream-surface border border-cream-border rounded-app-lg shadow-app px-3 py-2 outline-none focus:border-clay"
+            />
+            <span className="text-ink-muted text-base" aria-hidden="true">
+              →
+            </span>
+            <input
+              type="time"
+              aria-label="Fin de journée"
+              value={toTimeValue(workHours.end)}
+              onChange={(e) =>
+                setWorkHours((h) => ({ ...h, end: fromTimeValue(e.target.value, h.end) }))
+              }
+              className="bg-cream-surface border border-cream-border rounded-app-lg shadow-app px-3 py-2 outline-none focus:border-clay"
+            />
+          </div>
+          {workHours.end <= workHours.start && (
+            <p role="alert" className="text-sm text-red-600 m-0">
+              La fin de journée doit suivre le début.
+            </p>
+          )}
+        </div>
+
         <Link
           to="/"
           className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-clay text-cream text-sm font-medium no-underline hover:opacity-90 transition-opacity"
@@ -125,4 +171,18 @@ function ProfilePage() {
       </div>
     </div>
   )
+}
+
+/** Hours since midnight -> "HH:MM" for <input type="time">. */
+function toTimeValue(hours: number): string {
+  const h = Math.floor(hours)
+  const m = Math.round((hours - h) * 60)
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
+/** "HH:MM" -> hours since midnight; keeps `fallback` while the input is empty or mid-edit. */
+function fromTimeValue(value: string, fallback: number): number {
+  const [h, m] = value.split(':').map(Number)
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return fallback
+  return h + m / 60
 }

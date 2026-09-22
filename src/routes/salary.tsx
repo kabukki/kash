@@ -6,10 +6,12 @@ import clsx from 'clsx'
 import { Picker } from '../components'
 import {
   type SalaryMode,
+  type WorkHours,
   elapsedPaidSeconds,
   isEarning,
   monthPaidSeconds,
 } from '../lib/workmonth'
+import { DEFAULT_WORK_HOURS } from './profile'
 
 export const Route = createFileRoute('/salary')({
   ssr: false,
@@ -78,6 +80,7 @@ function MissingGross() {
 
 function Counter({ gross }: { gross: number }) {
   const [mode, setMode] = useLocalStorage<SalaryMode>('salaryMode', 'full')
+  const [workHours] = useLocalStorage<WorkHours>('workHours', DEFAULT_WORK_HOURS)
   const [earned, setEarned] = useState(0)
   const [perSecond, setPerSecond] = useState(0)
   const [earning, setEarning] = useState(true)
@@ -86,15 +89,16 @@ function Counter({ gross }: { gross: number }) {
   useEffect(() => {
     const tick = () => {
       const now = new Date()
-      const rate = gross / 12 / monthPaidSeconds(now, mode)
+      const paid = monthPaidSeconds(now, mode, workHours)
+      const rate = paid > 0 ? gross / 12 / paid : 0
       setPerSecond(rate)
-      setEarned(elapsedPaidSeconds(now, mode) * rate)
-      setEarning(isEarning(now, mode))
+      setEarned(elapsedPaidSeconds(now, mode, workHours) * rate)
+      setEarning(isEarning(now, mode, workHours))
       frameRef.current = requestAnimationFrame(tick)
     }
     frameRef.current = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frameRef.current)
-  }, [gross, mode])
+  }, [gross, mode, workHours.start, workHours.end])
 
   return (
     <div className="flex flex-col items-center gap-4 text-center">
