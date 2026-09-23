@@ -39,6 +39,7 @@ const NAV_LINKS = [
   { to: '/taxes', label: 'Impôts' },
   { to: '/salary', label: 'Salaire' },
   { to: '/comparison', label: 'Comparaison' },
+  { to: '/payslip', label: 'Fiche de paie' },
   { to: '/health', label: 'Santé' },
 ] as const
 
